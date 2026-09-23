@@ -100,7 +100,7 @@
   .field span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: .75rem; color: var(--muted); pointer-events: none; }
   .ex-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 
-  .s-foot { border-top: 1px solid var(--line); padding: 12px 18px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+  .s-foot { padding: 0 18px 12px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
   .s-foot .q { color: var(--danger); font-weight: 600; font-size: .9rem; margin-right: auto; }
 
   main { display: grid; gap: 16px; }
@@ -210,6 +210,13 @@ function render() {
         <span class="s-date">${new Date(s.date + "T12:00").toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}<small>${new Date(s.date + "T12:00").toLocaleDateString("de-DE", { weekday: "long" })} · ${PLAN_NAMES[s.plan || "upper"]}</small></span>
         <span class="s-count ${a === b && b ? "full" : ""}">${a} / ${b} Sätze ausgefüllt</span>
       </summary>
+      <div class="s-foot">
+        ${confirming === s.id
+          ? `<span class="q">Einheit wirklich löschen?</span>
+             <button class="btn-plain" data-act="cancel">Abbrechen</button>
+             <button class="btn-danger" data-act="del-session">Löschen</button>`
+          : `<button class="btn-delete" data-act="ask-del">Einheit löschen</button>`}
+      </div>
       <ol class="exercises">
         ${s.exercises.map(({ n, en, t, sets }, i) => `
         <li class="ex">
@@ -231,13 +238,6 @@ function render() {
           <div class="ex-foot"><button class="btn-ghost" data-act="add-set" data-e="${i}">+ Satz</button><button class="btn-delete" data-act="del-ex" data-e="${i}">Übung entfernen</button></div>
         </li>`).join("")}
       </ol>
-      <div class="s-foot">
-        ${confirming === s.id
-          ? `<span class="q">Einheit wirklich löschen?</span>
-             <button class="btn-plain" data-act="cancel">Abbrechen</button>
-             <button class="btn-danger" data-act="del-session">Löschen</button>`
-          : `<button class="btn-delete" data-act="ask-del">Einheit löschen</button>`}
-      </div>
     </details>`;
   }).join("");
 }

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trainingslog Oberkörper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --bg: #f4f6f5;
+    --surface: #ffffff;
+    --ink: #1b2422;
+    --muted: #66726e;
+    --line: #dde3e0;
+    --field: #f7f9f8;
+    --accent: #2c5e86;
+    --accent-ink: #ffffff;
+    --accent-soft: #e6eef5;
+    --danger: #a93d2c;
+    --done: #2f7a55;
+    --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+    --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #141918; --surface: #1c2322; --ink: #e8eeec; --muted: #93a09b;
+      --line: #2e3836; --field: #232b2a; --accent: #7fb0d8; --accent-ink: #0f1a24;
+      --accent-soft: #22303b; --danger: #e0806f; --done: #7cc59f;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #141918; --surface: #1c2322; --ink: #e8eeec; --muted: #93a09b;
+    --line: #2e3836; --field: #232b2a; --accent: #7fb0d8; --accent-ink: #0f1a24;
+    --accent-soft: #22303b; --danger: #e0806f; --done: #7cc59f;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.45 var(--body);
+    padding: 0 16px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding-block: 28px 64px; display: grid; gap: 20px; }
+
+  header { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 { font: 700 2rem/1 var(--display); letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+  .sub { color: var(--muted); font-size: .9rem; margin: 6px 0 0; }
+
+  button { font: inherit; cursor: pointer; border-radius: 8px; }
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-primary {
+    background: var(--accent); color: var(--accent-ink); border: 0;
+    font: 600 1rem var(--display); letter-spacing: .02em; padding: 11px 18px;
+  }
+  .btn-ghost { background: none; border: 1px dashed var(--line); color: var(--accent); font-weight: 600; font-size: .9rem; padding: 6px 12px; }
+  .btn-ghost:hover { border-color: var(--accent); }
+  .btn-x { background: none; border: 0; color: var(--muted); width: 36px; height: 36px; font-size: 1rem; }
+  .btn-x:hover { color: var(--danger); }
+  .btn-danger { background: var(--danger); color: var(--surface); border: 0; padding: 7px 12px; font-weight: 600; font-size: .9rem; }
+  .btn-plain { background: none; border: 1px solid var(--line); color: var(--ink); padding: 7px 12px; font-size: .9rem; }
+  .btn-delete { background: none; border: 0; color: var(--muted); font-size: .9rem; padding: 7px 0; text-decoration: underline; text-underline-offset: 3px; }
+  .btn-delete:hover { color: var(--danger); }
+
+  details.session { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  summary {
+    list-style: none; cursor: pointer; padding: 16px 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "▾"; color: var(--muted); transition: transform .15s; }
+  details:not([open]) summary::after { transform: rotate(-90deg); }
+  .s-date { font: 700 1.25rem/1.1 var(--display); }
+  .s-date small { display: block; font: 500 .8rem var(--body); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-top: 3px; }
+  .s-count { margin-left: auto; font: 500 .8rem var(--mono); color: var(--muted); background: var(--field); padding: 4px 8px; border-radius: 6px; white-space: nowrap; }
+  .s-count.full { color: var(--done); }
+
+  .exercises { list-style: none; margin: 0; padding: 0 18px; counter-reset: ex; }
+  .ex { border-top: 1px solid var(--line); padding-block: 16px; display: grid; gap: 10px; counter-increment: ex; }
+  .ex-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+  .ex-name { font: 600 1.1rem/1.2 var(--display); margin: 0; }
+  .ex-name::before { content: counter(ex) "  "; color: var(--muted); font: 500 .85rem var(--mono); }
+  .ex-en { display: block; font: 400 .8rem var(--body); color: var(--muted); margin-top: 2px; }
+  .ex-target { font: 500 .78rem var(--mono); color: var(--accent); background: var(--accent-soft); padding: 3px 7px; border-radius: 5px; white-space: nowrap; }
+
+  .sets { display: grid; gap: 6px; }
+  .set { display: grid; grid-template-columns: 26px 1fr 1fr 36px; gap: 8px; align-items: center; }
+  .set-n { font: 500 .8rem var(--mono); color: var(--muted); text-align: center; }
+  .field { position: relative; }
+  .field input {
+    width: 100%; min-width: 0; padding: 9px 38px 9px 10px;
+    background: var(--field); border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+    font: 500 1rem var(--mono); font-variant-numeric: tabular-nums;
+  }
+  .field span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: .75rem; color: var(--muted); pointer-events: none; }
+  .ex-foot { display: flex; }
+
+  .s-foot { border-top: 1px solid var(--line); padding: 12px 18px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+  .s-foot .q { color: var(--danger); font-weight: 600; font-size: .9rem; margin-right: auto; }
+
+  main { display: grid; gap: 16px; }
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  @media (prefers-reduced-motion: reduce) { summary::after { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Trainingslog</h1>
+      <p class="sub">Oberkörper · 8 Übungen · wird automatisch in diesem Browser gespeichert</p>
+    </div>
+    <button class="btn-primary" id="add">+ Neue Einheit</button>
+  </header>
+  <main id="list"></main>
+</div>
+
+<script>
+const KEY = "trainingslog";
+const EX = [
+  ["Schrägbank Langhantel", "Incline Barbell Bench Press", "3–4 × 6–10", 4],
+  ["Kabelzug Flys", "Seated Cable Fly", "3 × 10–12", 3],
+  ["Lattziehen", "Lat Pulldown", "3 × 6–8", 3],
+  ["Seitliches Schulterheben am Kabel", "High Cable Lateral Raise", "2–3 × 8–10", 3],
+  ["Meadows Row", "Meadows Row", "3 × 8–10", 3],
+  ["Trizeps-Pulldown", "Triceps Pushdown", "3 × 10–12", 3],
+  ["Bayesian Cable Curl", "Bayesian Cable Curl", "3 × 10–12", 3],
+  ["Scott-Curls", "Preacher Curl", "3 × 10–12", 3],
+];
+const SEED = [
+  [[17.5,10],[22.5,6],[25,6],[25,6]],
+  [[19,10],[33,10],[47,10]],
+  [[40,8],[57,8],[77,4]],
+  [[7.5,7],[5,8],[5,8]],
+  [[30,8],[40,8],[40,8]],
+  [[20,10],[25,8],[25,8]],
+  [[15,6],[10,10],[10,12]],
+  [[8,5],[10,10],[10,4]],
+];
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const today = () => new Date().toLocaleDateString("sv"); // YYYY-MM-DD in local time
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [{ id: uid(), date: "2026-09-22",
+    exercises: SEED.map(sets => sets.map(([w, r]) => ({ w: String(w), r: String(r) }))) }];
+}
+let sessions = load();
+let confirming = null;
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(sessions)); } catch {} };
+save();
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const counts = s => {
+  const all = s.exercises.flat();
+  return [all.filter(x => x.w !== "" && x.r !== "").length, all.length];
+};
+
+const list = document.getElementById("list");
+const openState = {};
+
+function render() {
+  const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
+  if (!sorted.length) { list.innerHTML = `<p class="empty">Noch keine Einheit. Leg mit „+ Neue Einheit“ los.</p>`; return; }
+  list.innerHTML = sorted.map(s => {
+    const [a, b] = counts(s);
+    return `
+    <details class="session" data-s="${s.id}" ${openState[s.id] !== false ? "open" : ""}>
+      <summary>
+        <span class="s-date">${new Date(s.date + "T12:00").toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}<small>${new Date(s.date + "T12:00").toLocaleDateString("de-DE", { weekday: "long" })}</small></span>
+        <span class="s-count ${a === b && b ? "full" : ""}">${a} / ${b} Sätze ausgefüllt</span>
+      </summary>
+      <ol class="exercises">
+        ${s.exercises.map((sets, i) => `
+        <li class="ex">
+          <div class="ex-head">
+            <h2 class="ex-name">${EX[i][0]}${EX[i][0] !== EX[i][1] ? `<span class="ex-en">${EX[i][1]}</span>` : ""}</h2>
+            <span class="ex-target" title="Ziel: Sätze × Wiederholungen">${EX[i][2]}</span>
+          </div>
+          <div class="sets">
+            ${sets.map((st, j) => `
+            <div class="set">
+              <span class="set-n">${j + 1}</span>
+              <label class="field"><span class="sr">Satz ${j + 1} Gewicht</span>
+                <input id="w-${s.id}-${i}-${j}" inputmode="decimal" data-e="${i}" data-j="${j}" data-k="w" value="${esc(st.w)}" placeholder="–"><span aria-hidden="true">kg</span></label>
+              <label class="field"><span class="sr">Satz ${j + 1} Wiederholungen</span>
+                <input id="r-${s.id}-${i}-${j}" inputmode="numeric" data-e="${i}" data-j="${j}" data-k="r" value="${esc(st.r)}" placeholder="–"><span aria-hidden="true">Wdh</span></label>
+              <button class="btn-x" data-act="del-set" data-e="${i}" data-j="${j}" aria-label="Satz ${j + 1} entfernen">✕</button>
+            </div>`).join("")}
+          </div>
+          <div class="ex-foot"><button class="btn-ghost" data-act="add-set" data-e="${i}">+ Satz</button></div>
+        </li>`).join("")}
+      </ol>
+      <div class="s-foot">
+        ${confirming === s.id
+          ? `<span class="q">Einheit wirklich löschen?</span>
+             <button class="btn-plain" data-act="cancel">Abbrechen</button>
+             <button class="btn-danger" data-act="del-session">Löschen</button>`
+          : `<button class="btn-delete" data-act="ask-del">Einheit löschen</button>`}
+      </div>
+    </details>`;
+  }).join("");
+}
+
+const sessionOf = el => sessions.find(s => s.id === el.closest("[data-s]").dataset.s);
+
+list.addEventListener("input", e => {
+  const t = e.target;
+  if (!t.dataset.k) return;
+  const s = sessionOf(t);
+  s.exercises[t.dataset.e][t.dataset.j][t.dataset.k] = t.value.replace(",", ".").trim();
+  save();
+  const [a, b] = counts(s);
+  const c = t.closest("details").querySelector(".s-count");
+  c.textContent = `${a} / ${b} Sätze ausgefüllt`;
+  c.classList.toggle("full", a === b && b > 0);
+});
+
+list.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const s = sessionOf(b);
+  const act = b.dataset.act;
+  if (act === "add-set") s.exercises[b.dataset.e].push({ w: "", r: "" });
+  if (act === "del-set") s.exercises[b.dataset.e].splice(b.dataset.j, 1);
+  if (act === "ask-del") confirming = s.id;
+  if (act === "cancel") confirming = null;
+  if (act === "del-session") { sessions = sessions.filter(x => x !== s); confirming = null; }
+  save();
+  render();
+  if (act === "add-set") {
+    const sets = list.querySelector(`[data-s="${s.id}"] .ex:nth-child(${+b.dataset.e + 1}) .sets`);
+    sets.lastElementChild?.querySelector("input")?.focus();
+  }
+});
+
+list.addEventListener("toggle", e => { openState[e.target.dataset.s] = e.target.open; }, true);
+
+document.getElementById("add").addEventListener("click", () => {
+  const s = { id: uid(), date: today(), exercises: EX.map(x => Array.from({ length: x[3] }, () => ({ w: "", r: "" }))) };
+  sessions.push(s);
+  save();
+  render();
+  list.querySelector(`[data-s="${s.id}"] input`)?.focus();
+});
+
+render();
+</script>
+</body>
+</html>

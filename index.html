@@ -104,6 +104,15 @@
   .s-foot .q { color: var(--danger); font-weight: 600; font-size: .9rem; margin-right: auto; }
 
   main { display: grid; gap: 16px; }
+  .plan summary { font: 600 1rem var(--display); color: var(--accent); }
+  .plan-body { padding: 0 18px 16px; display: grid; gap: 12px; }
+  .plan-hint { color: var(--muted); font-size: .85rem; margin: 0; }
+  .p-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .p-row input { width: 100%; min-width: 0; padding: 8px 10px; background: var(--field); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font: 400 .95rem var(--body); }
+  .p-row .p-name { grid-column: 1 / -1; font-weight: 600; }
+  .p-tools { grid-column: 1 / -1; display: flex; gap: 4px; align-items: center; }
+  .p-tools label { font-size: .8rem; color: var(--muted); display: flex; gap: 6px; align-items: center; margin-right: auto; }
+  .p-tools input { width: 64px; }
   .empty { color: var(--muted); text-align: center; padding: 40px 0; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   @media (prefers-reduced-motion: reduce) { summary::after { transition: none; } }
@@ -119,6 +128,7 @@
     </div>
     <button class="btn-primary" id="add">+ Neue Einheit</button>
   </header>
+  <details class="session plan" id="plan"><summary>Übungsplan bearbeiten</summary><div class="plan-body" id="plan-body"></div></details>
   <main id="list"></main>
 </div>
 
@@ -148,22 +158,23 @@ const SEED = [
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const today = () => new Date().toLocaleDateString("sv"); // YYYY-MM-DD in local time
 
-function load() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [{ id: uid(), date: "2026-09-22",
-    exercises: SEED.map(sets => sets.map(([w, r]) => ({ w: String(w), r: String(r) }))) }];
-}
-let sessions = load();
+const PLAN_KEY = "trainingsplan";
+const get = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+let plan = get(PLAN_KEY) || EX.map(([n, en, t, c]) => ({ n, en, t, c }));
+// Sessions from v1 stored bare set arrays indexed into EX.
+let sessions = (get(KEY) || [{ id: uid(), date: "2026-09-22",
+  exercises: SEED.map(sets => sets.map(([w, r]) => ({ w: String(w), r: String(r) }))) }])
+  .map(s => ({ ...s, exercises: s.exercises.map((x, i) => Array.isArray(x) ? { n: EX[i][0], en: EX[i][1], t: EX[i][2], sets: x } : x) }));
 let confirming = null;
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(sessions)); } catch {} };
+const save = () => set(KEY, sessions);
+const savePlan = () => set(PLAN_KEY, plan);
 save();
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const counts = s => {
-  const all = s.exercises.flat();
+  const all = s.exercises.flatMap(x => x.sets);
   return [all.filter(x => x.w !== "" && x.r !== "").length, all.length];
 };
 
@@ -182,11 +193,11 @@ function render() {
         <span class="s-count ${a === b && b ? "full" : ""}">${a} / ${b} Sätze ausgefüllt</span>
       </summary>
       <ol class="exercises">
-        ${s.exercises.map((sets, i) => `
+        ${s.exercises.map(({ n, en, t, sets }, i) => `
         <li class="ex">
           <div class="ex-head">
-            <h2 class="ex-name">${EX[i][0]}${EX[i][0] !== EX[i][1] ? `<span class="ex-en">${EX[i][1]}</span>` : ""}</h2>
-            <span class="ex-target" title="Ziel: Sätze × Wiederholungen">${EX[i][2]}</span>
+            <h2 class="ex-name">${esc(n)}${en && en !== n ? `<span class="ex-en">${esc(en)}</span>` : ""}</h2>
+            <span class="ex-target" title="Ziel: Sätze × Wiederholungen">${esc(t)}</span>
           </div>
           <div class="sets">
             ${sets.map((st, j) => `
@@ -219,7 +230,7 @@ list.addEventListener("input", e => {
   const t = e.target;
   if (!t.dataset.k) return;
   const s = sessionOf(t);
-  s.exercises[t.dataset.e][t.dataset.j][t.dataset.k] = t.value.replace(",", ".").trim();
+  s.exercises[t.dataset.e].sets[t.dataset.j][t.dataset.k] = t.value.replace(",", ".").trim();
   save();
   const [a, b] = counts(s);
   const c = t.closest("details").querySelector(".s-count");
@@ -232,8 +243,8 @@ list.addEventListener("click", e => {
   if (!b) return;
   const s = sessionOf(b);
   const act = b.dataset.act;
-  if (act === "add-set") s.exercises[b.dataset.e].push({ w: "", r: "" });
-  if (act === "del-set") s.exercises[b.dataset.e].splice(b.dataset.j, 1);
+  if (act === "add-set") s.exercises[b.dataset.e].sets.push({ w: "", r: "" });
+  if (act === "del-set") s.exercises[b.dataset.e].sets.splice(b.dataset.j, 1);
   if (act === "ask-del") confirming = s.id;
   if (act === "cancel") confirming = null;
   if (act === "del-session") { sessions = sessions.filter(x => x !== s); confirming = null; }
@@ -248,13 +259,52 @@ list.addEventListener("click", e => {
 list.addEventListener("toggle", e => { openState[e.target.dataset.s] = e.target.open; }, true);
 
 document.getElementById("add").addEventListener("click", () => {
-  const s = { id: uid(), date: today(), exercises: EX.map(x => Array.from({ length: x[3] }, () => ({ w: "", r: "" }))) };
+  const s = { id: uid(), date: today(), exercises: plan.map(({ n, en, t, c }) => ({ n, en, t, sets: Array.from({ length: +c || 1 }, () => ({ w: "", r: "" })) })) };
   sessions.push(s);
   save();
   render();
   list.querySelector(`[data-s="${s.id}"] input`)?.focus();
 });
 
+const planBody = document.getElementById("plan-body");
+function renderPlan() {
+  planBody.innerHTML = `<p class="plan-hint">Änderungen gelten für neue Einheiten. Bestehende Einheiten bleiben, wie sie sind.</p>` +
+    plan.map((x, i) => `
+    <div class="p-row" data-i="${i}">
+      <input class="p-name" id="pn-${i}" data-k="n" value="${esc(x.n)}" placeholder="Name" aria-label="Übung ${i + 1} Name">
+      <input id="pe-${i}" data-k="en" value="${esc(x.en)}" placeholder="Englischer Name" aria-label="Übung ${i + 1} englischer Name">
+      <input id="pt-${i}" data-k="t" value="${esc(x.t)}" placeholder="Ziel, z. B. 3 × 8–10" aria-label="Übung ${i + 1} Ziel">
+      <div class="p-tools">
+        <label>Sätze <input id="pc-${i}" data-k="c" type="number" min="1" max="10" inputmode="numeric" value="${esc(x.c)}"></label>
+        <button class="btn-x" data-act="up" aria-label="Übung ${i + 1} nach oben" ${i ? "" : "disabled"}>↑</button>
+        <button class="btn-x" data-act="down" aria-label="Übung ${i + 1} nach unten" ${i < plan.length - 1 ? "" : "disabled"}>↓</button>
+        <button class="btn-x" data-act="rm" aria-label="Übung ${i + 1} entfernen">✕</button>
+      </div>
+    </div>`).join("") +
+    `<div><button class="btn-ghost" data-act="add">+ Übung</button></div>`;
+}
+planBody.addEventListener("input", e => {
+  const t = e.target;
+  plan[t.closest("[data-i]").dataset.i][t.dataset.k] = t.value;
+  savePlan();
+});
+planBody.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const i = +b.closest("[data-i]")?.dataset.i;
+  const act = b.dataset.act;
+  if (act === "add") plan.push({ n: "", en: "", t: "", c: 3 });
+  if (act === "rm") plan.splice(i, 1);
+  if (act === "up" || act === "down") {
+    const j = act === "up" ? i - 1 : i + 1;
+    [plan[i], plan[j]] = [plan[j], plan[i]];
+  }
+  savePlan();
+  renderPlan();
+  if (act === "add") [...planBody.querySelectorAll(".p-name")].pop()?.focus();
+});
+
+renderPlan();
 render();
 </script>
 </body>

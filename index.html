@@ -104,6 +104,8 @@
   .s-foot .q { color: var(--danger); font-weight: 600; font-size: .9rem; margin-right: auto; }
 
   main { display: grid; gap: 16px; }
+  .adds { display: flex; gap: 8px; flex-wrap: wrap; }
+  .plans { display: grid; gap: 8px; }
   .plan summary { font: 600 1rem var(--display); color: var(--accent); }
   .plan-body { padding: 0 18px 16px; display: grid; gap: 12px; }
   .plan-hint { color: var(--muted); font-size: .85rem; margin: 0; }
@@ -124,11 +126,14 @@
   <header>
     <div>
       <h1>Trainingslog</h1>
-      <p class="sub">Oberkörper · 8 Übungen · wird automatisch in diesem Browser gespeichert</p>
+      <p class="sub">Oberkörper & Unterkörper · wird automatisch in diesem Browser gespeichert</p>
     </div>
-    <button class="btn-primary" id="add">+ Neue Einheit</button>
+    <div class="adds">
+      <button class="btn-primary" data-add="upper">+ Oberkörper</button>
+      <button class="btn-primary" data-add="lower">+ Unterkörper</button>
+    </div>
   </header>
-  <details class="session plan" id="plan"><summary>Übungsplan bearbeiten</summary><div class="plan-body" id="plan-body"></div></details>
+  <div class="plans" id="plans"></div>
   <main id="list"></main>
 </div>
 
@@ -162,14 +167,27 @@ const PLAN_KEY = "trainingsplan";
 const get = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const set = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-let plan = get(PLAN_KEY) || EX.map(([n, en, t, c]) => ({ n, en, t, c }));
+const PLAN_NAMES = { upper: "Oberkörper", lower: "Unterkörper" };
+const LOWER = [
+  ["Liegender Beinbeuger", "Lying Leg Curl", "2 × 6–8", 2],
+  ["Pendulum Squat", "Pendulum Squat", "3 × 6–8", 3],
+  ["Rumänisches Kreuzheben", "Romanian Deadlift", "3 × 6–8", 3],
+  ["Beinstrecker", "Leg Extension", "2 × 8–10", 2],
+  ["Adduktoren-/Hüftmaschine", "Hip Adductor Machine", "2 × 8–10", 2],
+  ["Wadenheben stehend", "Standing Calf Raise", "2 × 8–10", 2],
+];
+const toPlan = list => list.map(([n, en, t, c]) => ({ n, en, t, c }));
+// v2 stored a single upper-body plan array under PLAN_KEY.
+const stored = get(PLAN_KEY);
+let plans = Array.isArray(stored) ? { upper: stored } : stored || {};
+plans = { upper: plans.upper || toPlan(EX), lower: plans.lower || toPlan(LOWER) };
 // Sessions from v1 stored bare set arrays indexed into EX.
 let sessions = (get(KEY) || [{ id: uid(), date: "2026-09-22",
   exercises: SEED.map(sets => sets.map(([w, r]) => ({ w: String(w), r: String(r) }))) }])
   .map(s => ({ ...s, exercises: s.exercises.map((x, i) => Array.isArray(x) ? { n: EX[i][0], en: EX[i][1], t: EX[i][2], sets: x } : x) }));
 let confirming = null;
 const save = () => set(KEY, sessions);
-const savePlan = () => set(PLAN_KEY, plan);
+const savePlan = () => set(PLAN_KEY, plans);
 save();
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -189,7 +207,7 @@ function render() {
     return `
     <details class="session" data-s="${s.id}" ${openState[s.id] !== false ? "open" : ""}>
       <summary>
-        <span class="s-date">${new Date(s.date + "T12:00").toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}<small>${new Date(s.date + "T12:00").toLocaleDateString("de-DE", { weekday: "long" })}</small></span>
+        <span class="s-date">${new Date(s.date + "T12:00").toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" })}<small>${new Date(s.date + "T12:00").toLocaleDateString("de-DE", { weekday: "long" })} · ${PLAN_NAMES[s.plan || "upper"]}</small></span>
         <span class="s-count ${a === b && b ? "full" : ""}">${a} / ${b} Sätze ausgefüllt</span>
       </summary>
       <ol class="exercises">
@@ -258,39 +276,48 @@ list.addEventListener("click", e => {
 
 list.addEventListener("toggle", e => { openState[e.target.dataset.s] = e.target.open; }, true);
 
-document.getElementById("add").addEventListener("click", () => {
-  const s = { id: uid(), date: today(), exercises: plan.map(({ n, en, t, c }) => ({ n, en, t, sets: Array.from({ length: +c || 1 }, () => ({ w: "", r: "" })) })) };
+document.querySelectorAll("[data-add]").forEach(btn => btn.addEventListener("click", () => {
+  const key = btn.dataset.add;
+  const s = { id: uid(), date: today(), plan: key, exercises: plans[key].map(({ n, en, t, c }) => ({ n, en, t, sets: Array.from({ length: +c || 1 }, () => ({ w: "", r: "" })) })) };
   sessions.push(s);
   save();
   render();
   list.querySelector(`[data-s="${s.id}"] input`)?.focus();
-});
+}));
 
-const planBody = document.getElementById("plan-body");
+const plansEl = document.getElementById("plans");
+const planOpen = {};
 function renderPlan() {
-  planBody.innerHTML = `<p class="plan-hint">Änderungen gelten für neue Einheiten. Bestehende Einheiten bleiben, wie sie sind.</p>` +
+  plansEl.innerHTML = Object.entries(plans).map(([key, plan]) => `
+  <details class="session plan" data-p="${key}" ${planOpen[key] ? "open" : ""}>
+    <summary>Plan ${PLAN_NAMES[key]} bearbeiten</summary>
+    <div class="plan-body">
+    <p class="plan-hint">Änderungen gelten für neue Einheiten. Bestehende Einheiten bleiben, wie sie sind.</p>` +
     plan.map((x, i) => `
     <div class="p-row" data-i="${i}">
-      <input class="p-name" id="pn-${i}" data-k="n" value="${esc(x.n)}" placeholder="Name" aria-label="Übung ${i + 1} Name">
-      <input id="pe-${i}" data-k="en" value="${esc(x.en)}" placeholder="Englischer Name" aria-label="Übung ${i + 1} englischer Name">
-      <input id="pt-${i}" data-k="t" value="${esc(x.t)}" placeholder="Ziel, z. B. 3 × 8–10" aria-label="Übung ${i + 1} Ziel">
+      <input class="p-name" id="pn-${key}-${i}" data-k="n" value="${esc(x.n)}" placeholder="Name" aria-label="Übung ${i + 1} Name">
+      <input id="pe-${key}-${i}" data-k="en" value="${esc(x.en)}" placeholder="Englischer Name" aria-label="Übung ${i + 1} englischer Name">
+      <input id="pt-${key}-${i}" data-k="t" value="${esc(x.t)}" placeholder="Ziel, z. B. 3 × 8–10" aria-label="Übung ${i + 1} Ziel">
       <div class="p-tools">
-        <label>Sätze <input id="pc-${i}" data-k="c" type="number" min="1" max="10" inputmode="numeric" value="${esc(x.c)}"></label>
+        <label>Sätze <input id="pc-${key}-${i}" data-k="c" type="number" min="1" max="10" inputmode="numeric" value="${esc(x.c)}"></label>
         <button class="btn-x" data-act="up" aria-label="Übung ${i + 1} nach oben" ${i ? "" : "disabled"}>↑</button>
         <button class="btn-x" data-act="down" aria-label="Übung ${i + 1} nach unten" ${i < plan.length - 1 ? "" : "disabled"}>↓</button>
         <button class="btn-x" data-act="rm" aria-label="Übung ${i + 1} entfernen">✕</button>
       </div>
     </div>`).join("") +
-    `<div><button class="btn-ghost" data-act="add">+ Übung</button></div>`;
+    `<div><button class="btn-ghost" data-act="add">+ Übung</button></div></div></details>`).join("");
 }
-planBody.addEventListener("input", e => {
+plansEl.addEventListener("toggle", e => { planOpen[e.target.dataset.p] = e.target.open; }, true);
+const planOf = el => plans[el.closest("[data-p]").dataset.p];
+plansEl.addEventListener("input", e => {
   const t = e.target;
-  plan[t.closest("[data-i]").dataset.i][t.dataset.k] = t.value;
+  planOf(t)[t.closest("[data-i]").dataset.i][t.dataset.k] = t.value;
   savePlan();
 });
-planBody.addEventListener("click", e => {
+plansEl.addEventListener("click", e => {
   const b = e.target.closest("[data-act]");
   if (!b) return;
+  const plan = planOf(b);
   const i = +b.closest("[data-i]")?.dataset.i;
   const act = b.dataset.act;
   if (act === "add") plan.push({ n: "", en: "", t: "", c: 3 });
@@ -301,7 +328,7 @@ planBody.addEventListener("click", e => {
   }
   savePlan();
   renderPlan();
-  if (act === "add") [...planBody.querySelectorAll(".p-name")].pop()?.focus();
+  if (act === "add") [...plansEl.querySelectorAll(`[data-p="${b.closest("[data-p]").dataset.p}"] .p-name`)].pop()?.focus();
 });
 
 renderPlan();

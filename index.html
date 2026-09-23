@@ -103,6 +103,11 @@
   .s-foot { padding: 0 18px 12px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
   .s-foot .q { color: var(--danger); font-weight: 600; font-size: .9rem; margin-right: auto; }
 
+  .gate { min-height: 100vh; display: grid; place-items: center; }
+  .gate form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: grid; gap: 12px; width: min(100%, 340px); }
+  .gate label { font: 600 1.1rem var(--display); }
+  .gate input { padding: 10px 12px; background: var(--field); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font: 1rem var(--body); }
+  .gate .err { color: var(--danger); font-size: .9rem; margin: 0; }
   main { display: grid; gap: 16px; }
   .adds { display: flex; gap: 8px; flex-wrap: wrap; }
   .plans { display: grid; gap: 8px; }
@@ -122,7 +127,16 @@
 </head>
 <body>
 
-<div class="wrap">
+<div class="gate" id="gate" hidden>
+  <form id="gate-form">
+    <label for="gate-pw">Passwort</label>
+    <input id="gate-pw" type="password" autocomplete="current-password" required>
+    <p class="err" id="gate-err" role="alert" hidden>Falsches Passwort.</p>
+    <button class="btn-primary">Entsperren</button>
+  </form>
+</div>
+
+<div class="wrap" id="app" hidden>
   <header>
     <div>
       <h1>Trainingslog</h1>
@@ -137,6 +151,27 @@
   <main id="list"></main>
 </div>
 
+<script>
+// ponytail: client-side gate only — the source is public, this just keeps casual visitors out.
+const PW_HASH = "433baf3ed292c462ce30f1ee9ac0858939e8cfbacef75e02b263e83c91d0b06f";
+const unlocked = () => document.cookie.split("; ").includes("tl_auth=" + PW_HASH);
+const sha256 = async t => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))].map(b => b.toString(16).padStart(2, "0")).join("");
+if (unlocked()) document.getElementById("app").hidden = false;
+else {
+  document.getElementById("gate").hidden = false;
+  document.getElementById("gate-pw").focus();
+  document.getElementById("gate-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const h = await sha256(document.getElementById("gate-pw").value);
+    if (h !== PW_HASH) { document.getElementById("gate-err").hidden = false; return; }
+    // Browsers cap cookie lifetime at ~400 days; max-age is extended on every visit below.
+    document.cookie = `tl_auth=${h}; max-age=34560000; path=/; SameSite=Strict; Secure`;
+    document.getElementById("gate").hidden = true;
+    document.getElementById("app").hidden = false;
+  });
+}
+if (unlocked()) document.cookie = `tl_auth=${PW_HASH}; max-age=34560000; path=/; SameSite=Strict; Secure`;
+</script>
 <script>
 const KEY = "trainingslog";
 const EX = [

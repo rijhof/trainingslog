@@ -98,7 +98,7 @@
     font: 500 1rem var(--mono); font-variant-numeric: tabular-nums;
   }
   .field span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: .75rem; color: var(--muted); pointer-events: none; }
-  .ex-foot { display: flex; }
+  .ex-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 
   .s-foot { border-top: 1px solid var(--line); padding: 12px 18px; display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
   .s-foot .q { color: var(--danger); font-weight: 600; font-size: .9rem; margin-right: auto; }
@@ -228,7 +228,7 @@ function render() {
               <button class="btn-x" data-act="del-set" data-e="${i}" data-j="${j}" aria-label="Satz ${j + 1} entfernen">✕</button>
             </div>`).join("")}
           </div>
-          <div class="ex-foot"><button class="btn-ghost" data-act="add-set" data-e="${i}">+ Satz</button></div>
+          <div class="ex-foot"><button class="btn-ghost" data-act="add-set" data-e="${i}">+ Satz</button><button class="btn-delete" data-act="del-ex" data-e="${i}">Übung entfernen</button></div>
         </li>`).join("")}
       </ol>
       <div class="s-foot">
@@ -263,6 +263,7 @@ list.addEventListener("click", e => {
   const act = b.dataset.act;
   if (act === "add-set") s.exercises[b.dataset.e].sets.push({ w: "", r: "" });
   if (act === "del-set") s.exercises[b.dataset.e].sets.splice(b.dataset.j, 1);
+  if (act === "del-ex") s.exercises.splice(b.dataset.e, 1);
   if (act === "ask-del") confirming = s.id;
   if (act === "cancel") confirming = null;
   if (act === "del-session") { sessions = sessions.filter(x => x !== s); confirming = null; }

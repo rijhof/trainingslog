@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trainingslog Export</title>
+<style>
+  body { font: 16px system-ui, sans-serif; margin: 0; padding: 16px; background: #fff; color: #111; }
+  textarea { width: 100%; height: 60vh; box-sizing: border-box; font: 13px ui-monospace, monospace; }
+  button { font: inherit; padding: 10px 16px; margin: 8px 8px 0 0; }
+  @media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } textarea { background: #222; color: #eee; } }
+</style>
+</head>
+<body>
+<h1>Trainingslog Export</h1>
+<label for="out">Deine Daten (JSON)</label>
+<textarea id="out" readonly></textarea>
+<button id="copy">Kopieren</button>
+<button id="dl">Als Datei speichern</button>
+<p id="msg" role="status"></p>
+<script>
+const data = {};
+for (const k of ["trainingslog", "trainingsplan"]) {
+  try { data[k] = JSON.parse(localStorage.getItem(k)); } catch { data[k] = null; }
+}
+const json = JSON.stringify(data, null, 2);
+const out = document.getElementById("out");
+const msg = document.getElementById("msg");
+out.value = json;
+document.getElementById("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(json); msg.textContent = "Kopiert."; }
+  catch { out.select(); msg.textContent = "Kopieren nicht möglich – Text ist markiert, bitte manuell kopieren."; }
+};
+document.getElementById("dl").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+  a.download = "trainingslog-export.json";
+  a.click();
+};
+</script>
+</body>
+</html>
